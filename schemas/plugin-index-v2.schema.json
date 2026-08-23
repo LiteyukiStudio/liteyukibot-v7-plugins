@@ -1,0 +1,84 @@
+{
+  "$defs": {
+    "artifact": {
+      "additionalProperties": false,
+      "properties": {
+        "bytes": {"maximum": 268435456, "minimum": 1, "type": "integer"},
+        "sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+        "url": {"format": "uri", "type": "string"}
+      },
+      "required": ["url", "sha256", "bytes"],
+      "type": "object"
+    },
+    "facet": {
+      "additionalProperties": false,
+      "properties": {
+        "artifacts": {"items": {"$ref": "#/$defs/artifact"}, "maxItems": 256, "type": "array"},
+        "capabilities": {"items": {"type": "string"}, "maxItems": 128, "type": "array"},
+        "load": {"type": "object"},
+        "platform": {
+          "additionalProperties": false,
+          "properties": {
+            "machines": {"items": {"type": "string"}, "maxItems": 32, "type": "array"},
+            "pythons": {"items": {"type": "string"}, "maxItems": 16, "type": "array"},
+            "systems": {"items": {"type": "string"}, "maxItems": 16, "type": "array"}
+          },
+          "required": ["systems", "machines", "pythons"],
+          "type": "object"
+        },
+        "runtime_kind": {"type": "string"},
+        "wheels": {"items": {"$ref": "#/$defs/artifact"}, "maxItems": 256, "type": "array"}
+      },
+      "required": ["runtime_kind", "artifacts", "wheels", "platform", "load", "capabilities"],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bundles": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "dependencies": {"items": {"type": "string"}, "maxItems": 64, "type": "array"},
+          "display_name": {"maxLength": 120, "minLength": 1, "type": "string"},
+          "facets": {"items": {"$ref": "#/$defs/facet"}, "maxItems": 16, "minItems": 1, "type": "array"},
+          "homepage": {"format": "uri", "type": "string"},
+          "id": {"pattern": "^[a-z][a-z0-9.-]{0,127}$", "type": "string"},
+          "license": {
+            "additionalProperties": false,
+            "properties": {
+              "expression": {"maxLength": 128, "minLength": 1, "type": "string"},
+              "url": {"format": "uri", "type": "string"}
+            },
+            "required": ["expression"],
+            "type": "object"
+          },
+          "publisher": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {"pattern": "^[a-z][a-z0-9-]{0,63}$", "type": "string"},
+              "name": {"maxLength": 80, "minLength": 1, "type": "string"},
+              "url": {"format": "uri", "type": "string"}
+            },
+            "required": ["id", "name", "url"],
+            "type": "object"
+          },
+          "repository": {"format": "uri", "type": "string"},
+          "status": {"enum": ["active", "yanked"]},
+          "summary": {"maxLength": 240, "minLength": 1, "type": "string"},
+          "version": {"maxLength": 64, "minLength": 1, "type": "string"},
+          "yanked_reason": {"maxLength": 240, "minLength": 1, "type": "string"}
+        },
+        "required": ["id", "version", "display_name", "summary", "publisher", "license", "repository", "status", "dependencies", "facets"],
+        "type": "object"
+      },
+      "maxItems": 10000,
+      "type": "array"
+    },
+    "schema": {"const": 2}
+  },
+  "required": ["schema", "bundles"],
+  "title": "LiteyukiBot plugin index schema 2",
+  "type": "object"
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bundles": {
+      "items": {"type": "object"},
+      "type": "array"
+    },
+    "schema": {"const": 1}
+  },
+  "required": ["schema", "bundles"],
+  "title": "LiteyukiBot plugin index schema 1",
+  "type": "object"
+}
