@@ -30,6 +30,19 @@ python -m unittest discover -s tests -v
 emitted by the validator. Pull requests that change the index must also follow
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
+After the Alpha12 release is published, generate the first schema-2 reference
+entry from the signed release manifest rather than predicting a wheel name or
+digest:
+
+```bash
+python scripts/generate_reference_index.py \
+  --manifest artifacts.manifest.json \
+  --output index.json
+```
+
+Run `python scripts/validate_index.py index.json` and submit the generated file
+through the normal pull-request review.
+
 ## License
 
 Repository metadata and validation code use LSO-Common v1.4. Indexed plugins

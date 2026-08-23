@@ -108,7 +108,7 @@ def _validate_v1(document: dict[str, Any]) -> None:
         raise IndexValidationError("schema-1 bundles must be an array")
 
 
-def _validate_artifact(value: object, subject: str) -> int:
+def _validate_artifact(value: object, subject: str) -> tuple[str, int]:
     artifact = _object(value, subject, {"url", "sha256", "bytes"})
     _https_url(artifact["url"], f"{subject} URL")
     if not isinstance(artifact["sha256"], str) or not SHA256.fullmatch(artifact["sha256"]):
@@ -116,7 +116,7 @@ def _validate_artifact(value: object, subject: str) -> int:
     size = artifact["bytes"]
     if isinstance(size, bool) or not isinstance(size, int) or not 1 <= size <= MAX_ARTIFACT_BYTES:
         raise IndexValidationError(f"{subject} byte size is outside the allowed range")
-    return size
+    return artifact["sha256"], size
 
 
 def _validate_facet(value: object, subject: str) -> tuple[int, int]:
@@ -131,7 +131,10 @@ def _validate_facet(value: object, subject: str) -> tuple[int, int]:
     inputs = [*facet["artifacts"], *facet["wheels"]]
     if not inputs or len(inputs) > MAX_GENERATION_INPUTS:
         raise IndexValidationError(f"{subject} must contain between 1 and {MAX_GENERATION_INPUTS} inputs")
-    total = sum(_validate_artifact(item, f"{subject} input") for item in inputs)
+    records = [_validate_artifact(item, f"{subject} input") for item in inputs]
+    if len({digest for digest, _size in records}) != len(records):
+        raise IndexValidationError(f"{subject} inputs must not repeat an artifact digest")
+    total = sum(size for _digest, size in records)
     platform = _object(facet["platform"], f"{subject} platform", {"systems", "machines", "pythons"})
     _string_array(platform["systems"], f"{subject} systems", 16)
     _string_array(platform["machines"], f"{subject} machines", 32)
@@ -159,7 +162,11 @@ def _validate_v2(document: dict[str, Any]) -> None:
             "status", "dependencies", "facets",
         }
         optional = {"homepage", "yanked_reason"}
-        if not isinstance(raw_bundle, dict) or not required <= set(raw_bundle) or set(raw_bundle) - required > optional:
+        if (
+            not isinstance(raw_bundle, dict)
+            or not required <= set(raw_bundle)
+            or not set(raw_bundle) <= required | optional
+        ):
             raise IndexValidationError(f"{subject} has missing or unknown fields")
         bundle_id = _identifier(raw_bundle["id"], f"{subject} ID", bundle=True)
         if bundle_id in dependencies:
@@ -236,6 +243,8 @@ def validate_document(document: object) -> dict[str, Any]:
     if not isinstance(document, dict):
         raise IndexValidationError("plugin index must be an object")
     schema = document.get("schema")
+    if isinstance(schema, bool):
+        raise IndexValidationError("plugin index schema must be 1 or 2")
     if schema == 1:
         _validate_v1(document)
     elif schema == 2:
