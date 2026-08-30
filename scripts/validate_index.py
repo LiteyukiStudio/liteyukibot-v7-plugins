@@ -125,9 +125,12 @@ def _validate_facet(value: object, subject: str) -> tuple[int, int]:
         subject,
         {"runtime_kind", "artifacts", "wheels", "platform", "load", "capabilities"},
     )
-    _identifier(facet["runtime_kind"], f"{subject} runtime kind")
+    if facet["runtime_kind"] != "cordis":
+        raise IndexValidationError(f"{subject} runtime kind must be 'cordis'")
     if not isinstance(facet["artifacts"], list) or not isinstance(facet["wheels"], list):
         raise IndexValidationError(f"{subject} inputs must be arrays")
+    if facet["artifacts"]:
+        raise IndexValidationError(f"{subject} contains non-wheel artifacts; Alpha15 accepts Python wheels only")
     inputs = [*facet["artifacts"], *facet["wheels"]]
     if not inputs or len(inputs) > MAX_GENERATION_INPUTS:
         raise IndexValidationError(f"{subject} must contain between 1 and {MAX_GENERATION_INPUTS} inputs")
@@ -145,6 +148,10 @@ def _validate_facet(value: object, subject: str) -> tuple[int, int]:
         raise IndexValidationError(f"{subject} load plan must be an object")
     if len(json.dumps(facet["load"], separators=(",", ":"), sort_keys=True).encode()) > MAX_LOAD_PLAN_BYTES:
         raise IndexValidationError(f"{subject} load plan is too large")
+    load = _object(facet["load"], f"{subject} load plan", {"entry_points"})
+    entry_points = _string_array(load["entry_points"], f"{subject} entry points", 64)
+    if any(not BUNDLE_IDENTIFIER.fullmatch(item) for item in entry_points):
+        raise IndexValidationError(f"{subject} entry points must be lowercase identifiers")
     _string_array(facet["capabilities"], f"{subject} capabilities", 128)
     return len(inputs), total
 
@@ -155,13 +162,15 @@ def _validate_v2(document: dict[str, Any]) -> None:
     if not isinstance(bundles, list) or len(bundles) > 10_000:
         raise IndexValidationError("schema-2 bundles must be an array with at most 10000 entries")
     dependencies: dict[str, tuple[str, ...]] = {}
+    project_owners: dict[str, str] = {}
+    entry_point_owners: dict[str, str] = {}
     for position, raw_bundle in enumerate(bundles):
         subject = f"bundle {position}"
         required = {
             "id", "version", "display_name", "summary", "publisher", "license", "repository",
-            "status", "dependencies", "facets",
+            "status", "dependencies", "facets", "project_id",
         }
-        optional = {"homepage", "yanked_reason"}
+        optional = {"homepage", "yanked_reason", "description", "tags", "compatibility", "gallery", "changelog"}
         if (
             not isinstance(raw_bundle, dict)
             or not required <= set(raw_bundle)
@@ -174,6 +183,17 @@ def _validate_v2(document: dict[str, Any]) -> None:
         _bounded_string(raw_bundle["version"], f"{subject} version", 64)
         _bounded_string(raw_bundle["display_name"], f"{subject} display name", 120)
         _bounded_string(raw_bundle["summary"], f"{subject} summary", 240)
+        project_id = _identifier(raw_bundle["project_id"], f"{subject} project ID", bundle=True)
+        previous_project = project_owners.setdefault(project_id, bundle_id)
+        if previous_project != bundle_id:
+            raise IndexValidationError(
+                f"bundles {previous_project!r} and {bundle_id!r} share project ID {project_id!r}"
+            )
+        if "description" in raw_bundle:
+            _bounded_string(raw_bundle["description"], f"{subject} description", 8192)
+        for field, maximum in (("tags", 64), ("compatibility", 64), ("gallery", 64), ("changelog", 64)):
+            if field in raw_bundle:
+                _string_array(raw_bundle[field], f"{subject} {field}", maximum)
         publisher = _object(raw_bundle["publisher"], f"{subject} publisher", {"id", "name", "url"})
         _identifier(publisher["id"], f"{subject} publisher ID")
         _bounded_string(publisher["name"], f"{subject} publisher name", 80)
@@ -213,6 +233,12 @@ def _validate_v2(document: dict[str, Any]) -> None:
             if kind in kinds:
                 raise IndexValidationError(f"{subject} repeats runtime kind {kind!r}")
             kinds.add(kind)
+            for entry_point in facet["load"]["entry_points"]:
+                previous_entry_point = entry_point_owners.setdefault(entry_point, bundle_id)
+                if previous_entry_point != bundle_id:
+                    raise IndexValidationError(
+                        f"bundles {previous_entry_point!r} and {bundle_id!r} share entry point {entry_point!r}"
+                    )
             input_count += count
             input_bytes += size
         if input_count > MAX_GENERATION_INPUTS or input_bytes > MAX_GENERATION_INPUT_BYTES:

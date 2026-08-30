@@ -8,9 +8,10 @@ reviewed atomically. A submission must provide:
 - a public source repository and immutable release/tag/commit reference;
 - a valid SPDX expression or accepted LSO v1.4 `LicenseRef`, plus the complete
   license URL for a custom license;
+- the exact PyPI distribution name in `project_id`;
 - exact artifact URLs, byte lengths, and lowercase SHA-256 digests;
-- each supported runtime kind, platform restriction, load plan, and requested
-  capability;
+- the `cordis` runtime facet, platform restriction, `load.entry_points` values
+  from the `liteyukibot.cordis_plugins` group, and requested capabilities;
 - installation, startup, shutdown, update, rollback, and uninstall evidence;
 - a security-reporting path controlled by the plugin publisher.
 

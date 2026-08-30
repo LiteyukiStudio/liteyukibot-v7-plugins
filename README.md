@@ -7,10 +7,17 @@ LiteyukiBot v7:
 https://raw.githubusercontent.com/LiteyukiStudio/liteyukibot-v7-plugins/main/index.json
 ```
 
-`index.json` initially remains a schema-1 empty index so existing Alpha clients
-can fetch the endpoint before schema-2 support ships. Schema 2 adds publisher,
-license, source, withdrawal, size, and discovery metadata covered by the index
-digest. It becomes the live format only after `v7.0.0a12` is available.
+`index.json` is a schema-2 index. Alpha15 bundles use the current Cordis
+contract: `project_id` identifies the PyPI distribution and the selected facet
+uses `load.entry_points` to name entries in the
+`liteyukibot.cordis_plugins` group. Each indexed bundle must provide a
+compatible Python wheel with exact size and SHA-256 metadata.
+
+The live index is currently empty because the packages previously registered
+under the `liteyukibot-v7-*` names expose the historical
+`liteyukibot.plugins` group and are not Alpha15-compatible. Add a bundle only
+after its Alpha15 wheel has been published and its entry point has been
+verified against the current host.
 
 The index does not host or execute plugin code. Every artifact is distributed
 from a credential-free HTTPS URL and pinned by exact byte length and SHA-256.
@@ -30,9 +37,8 @@ python -m unittest discover -s tests -v
 emitted by the validator. Pull requests that change the index must also follow
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-After the Alpha12 release is published, generate the first schema-2 reference
-entry from the signed release manifest rather than predicting a wheel name or
-digest:
+Generate a schema-2 reference entry from a signed release manifest rather than
+predicting a wheel name or digest:
 
 ```bash
 python scripts/generate_reference_index.py \
