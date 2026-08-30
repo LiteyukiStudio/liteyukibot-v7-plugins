@@ -1,4 +1,4 @@
-"""Generate the official reference entry from a verified Alpha manifest."""
+"""Generate the official reference Cordis entry from a verified manifest."""
 
 from __future__ import annotations
 
@@ -9,9 +9,9 @@ from urllib.parse import quote, urlsplit
 
 from validate_index import IndexValidationError, canonical_json, validate_path, validate_document
 
-REFERENCE_DISTRIBUTION = "liteyukibot-v7-example-nonebot-plugin"
-REFERENCE_BUNDLE_ID = "liteyuki.reference.nonebot"
-REFERENCE_WHEEL_MODULE = "liteyukibot_example_nonebot_plugin"
+REFERENCE_DISTRIBUTION = "liteyukibot-v7-example-cordis-plugin"
+REFERENCE_BUNDLE_ID = "liteyuki.reference.cordis"
+REFERENCE_ENTRY_POINT = "liteyuki.reference.cordis"
 OFFICIAL_REPOSITORY = "https://github.com/LiteyukiStudio/LiteyukiBot"
 
 
@@ -82,7 +82,7 @@ def build_entry(manifest: dict[str, object]) -> dict[str, object]:
     artifact = _artifact(manifest)
     artifact_url = f"{_release_base_url(tag)}/{quote(str(artifact['filename']), safe='')}"
     license_url = f"https://raw.githubusercontent.com/LiteyukiStudio/LiteyukiBot/{quote(tag, safe='')}/LICENSE.zh-CN"
-    repository_url = f"{OFFICIAL_REPOSITORY}/tree/{quote(tag, safe='')}/examples/nonebot-plugin"
+    repository_url = f"{OFFICIAL_REPOSITORY}/tree/{quote(tag, safe='')}/examples/cordis-plugin"
     for subject, url in (
         ("artifact URL", artifact_url),
         ("license URL", license_url),
@@ -92,8 +92,8 @@ def build_entry(manifest: dict[str, object]) -> dict[str, object]:
     return {
         "id": REFERENCE_BUNDLE_ID,
         "version": "0.1.0",
-        "display_name": "LiteyukiBot Reference NoneBot Plugin",
-        "summary": "Executable reference for managed NoneBot generations.",
+        "display_name": "LiteyukiBot Reference Cordis Plugin",
+        "summary": "Executable reference for Alpha15 Cordis plugins.",
         "publisher": {
             "id": "liteyuki",
             "name": "Liteyuki Studio",
@@ -101,11 +101,12 @@ def build_entry(manifest: dict[str, object]) -> dict[str, object]:
         },
         "license": {"expression": "LicenseRef-LSO-Common-1.4", "url": license_url},
         "repository": repository_url,
+        "project_id": REFERENCE_DISTRIBUTION,
         "status": "active",
         "dependencies": [],
         "facets": [
             {
-                "runtime_kind": "nonebot",
+                "runtime_kind": "cordis",
                 "artifacts": [],
                 "wheels": [
                     {
@@ -115,7 +116,7 @@ def build_entry(manifest: dict[str, object]) -> dict[str, object]:
                     }
                 ],
                 "platform": {"systems": [], "machines": [], "pythons": ["3.14"]},
-                "load": {"plugins": [REFERENCE_WHEEL_MODULE], "directories": []},
+                "load": {"entry_points": [REFERENCE_ENTRY_POINT]},
                 "capabilities": [],
             }
         ],

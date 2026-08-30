@@ -15,7 +15,24 @@
       "properties": {
         "artifacts": {"items": {"$ref": "#/$defs/artifact"}, "maxItems": 256, "type": "array"},
         "capabilities": {"items": {"type": "string"}, "maxItems": 128, "type": "array"},
-        "load": {"type": "object"},
+        "load": {
+          "additionalProperties": false,
+          "properties": {
+            "entry_points": {
+              "items": {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9.-]{0,127}$",
+                "type": "string"
+              },
+              "maxItems": 64,
+              "minItems": 1,
+              "type": "array"
+            }
+          },
+          "required": ["entry_points"],
+          "type": "object"
+        },
         "platform": {
           "additionalProperties": false,
           "properties": {
@@ -26,7 +43,7 @@
           "required": ["systems", "machines", "pythons"],
           "type": "object"
         },
-        "runtime_kind": {"type": "string"},
+        "runtime_kind": {"const": "cordis"},
         "wheels": {"items": {"$ref": "#/$defs/artifact"}, "maxItems": 256, "type": "array"}
       },
       "required": ["runtime_kind", "artifacts", "wheels", "platform", "load", "capabilities"],
@@ -40,7 +57,10 @@
       "items": {
         "additionalProperties": false,
         "properties": {
+          "changelog": {"items": {"maxLength": 2048, "type": "string"}, "maxItems": 64, "type": "array"},
+          "compatibility": {"items": {"maxLength": 2048, "type": "string"}, "maxItems": 64, "type": "array"},
           "dependencies": {"items": {"type": "string"}, "maxItems": 64, "type": "array"},
+          "description": {"maxLength": 8192, "type": "string"},
           "display_name": {"maxLength": 120, "minLength": 1, "type": "string"},
           "facets": {"items": {"$ref": "#/$defs/facet"}, "maxItems": 16, "minItems": 1, "type": "array"},
           "homepage": {"format": "uri", "type": "string"},
@@ -64,13 +84,16 @@
             "required": ["id", "name", "url"],
             "type": "object"
           },
+          "gallery": {"items": {"format": "uri", "type": "string"}, "maxItems": 64, "type": "array"},
           "repository": {"format": "uri", "type": "string"},
+          "project_id": {"pattern": "^[a-z][a-z0-9.-]{0,127}$", "type": "string"},
           "status": {"enum": ["active", "yanked"]},
           "summary": {"maxLength": 240, "minLength": 1, "type": "string"},
+          "tags": {"items": {"maxLength": 128, "type": "string"}, "maxItems": 64, "type": "array"},
           "version": {"maxLength": 64, "minLength": 1, "type": "string"},
           "yanked_reason": {"maxLength": 240, "minLength": 1, "type": "string"}
         },
-        "required": ["id", "version", "display_name", "summary", "publisher", "license", "repository", "status", "dependencies", "facets"],
+        "required": ["id", "version", "display_name", "summary", "publisher", "license", "repository", "status", "dependencies", "facets", "project_id"],
         "type": "object"
       },
       "maxItems": 10000,
